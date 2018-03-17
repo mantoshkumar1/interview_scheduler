@@ -1,0 +1,10 @@
+
+https://github.com/narenaryan/Salary-API
+
+- Install flask: 
+$ pip install Flask
+
+- Installing flask-sqlalchemy and flask-marshmallow
+$ pip install flask_sqlalchemy
+$ pip install flask_marshmallow
+$ pip install marshmallow-sqlalchemy
