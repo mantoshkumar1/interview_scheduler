@@ -1,15 +1,15 @@
 from flask import request, jsonify
-
 from setting import db
-from model.employee import Employee, EmployeeSchedule, EmployeeScheduleSchema
+from model.candidate import Candidate, CandidateSchedule, CandidateScheduleSchema
 
 import datetime
 import time
 
-class EmpLogic:
+
+class CandidateLogic:
     def __init__(self):
-        self.employee_schema = EmployeeScheduleSchema()
-        self.employees_schema = EmployeeScheduleSchema(many=True)
+        self.candidate_schema = CandidateScheduleSchema()
+        self.candidates_schema = CandidateScheduleSchema(many=True)
 
     def verify_post_data(self):
         # check every field is present and end_time is greater than start_time
@@ -34,14 +34,14 @@ class EmpLogic:
             timeB = datetime.datetime.strptime(request.json['end_time'], "%H:%M")
             if timeB <= timeA:  return False, {"Error: ": "end_time is less/equal than start_time"}
 
-        except KeyError: # All the values are not present
+        except KeyError:  # All the values are not present
             return False, {"Error": "All mandatory fields are not provided"}
-        except ValueError: # time format of start_time and end_time is not in 24 hours format
+        except ValueError:  # time format of start_time and end_time is not in 24 hours format
             return False, {"Error": "Time format is/are not in 24 hours format"}
 
         return True, "all ok"
 
-    def add_emp_schedule(self):
+    def add_candidate_schedule(self):
 
         is_data_ok, error_msg = self.verify_post_data()
         if not is_data_ok:
@@ -53,30 +53,29 @@ class EmpLogic:
         start_time = request.json['start_time']
         end_time = request.json['end_time']
 
-        emp = Employee.query.filter_by(email=email).first()
+        candidate = Candidate.query.filter_by(email=email).first()
 
-        # if emp does not exist, then make one otherwise employee scheduler entry will not be made.
-        if not emp:
-            emp = Employee(name, email)
-            db.session.add(emp)
+        # if candidate does not exist, then make one otherwise candidate scheduler entry will not be made.
+        if not candidate:
+            candidate = Candidate(name, email)
+            db.session.add(candidate)
             db.session.commit()
 
-        emp_schedule = EmployeeSchedule.query.filter_by(
-            day=day,
-            start_time=start_time,
-            end_time=end_time,
-            emp_id=emp.id
-        ).first()
+            candidate_schedule = CandidateSchedule.query.filter_by(
+                day=day,
+                start_time=start_time,
+                end_time=end_time,
+                candidate_id=candidate.id
+            ).first()
 
-        if not emp_schedule:
-            emp_schedule = EmployeeSchedule(day, start_time, end_time, emp.id)
-            db.session.add(emp_schedule)
+        if not candidate_schedule:
+            candidate_schedule = CandidateSchedule(day, start_time, end_time, candidate.id)
+            db.session.add(candidate_schedule)
             db.session.commit()
 
-        return self.employee_schema.jsonify(emp_schedule)
+        return self.candidate_schema.jsonify(candidate_schedule)
 
-    def get_emp_schedule(self):
-        all_emp = EmployeeSchedule.query.all()
-        result = self.employees_schema.dump(all_emp)
+    def get_candidate_schedule(self):
+        all_candidate = CandidateSchedule.query.all()
+        result = self.candidates_schema.dump(all_candidate)
         return jsonify(result.data)
-

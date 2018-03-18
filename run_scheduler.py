@@ -1,10 +1,9 @@
 from setting import app, db
 from task.employee import EmpLogic
-#from model.employee import EmployeeScheduleSchema
+from task.candidate import CandidateLogic
 
 emp_logic = EmpLogic()
-#employee_schema = EmployeeScheduleSchema()
-#employees_schema = EmployeeScheduleSchema(many=True)
+candidate_logic = CandidateLogic()
 
 # generating SQLite database
 with app.app_context():
@@ -26,6 +25,17 @@ def get_emp_schedule():
 @app.route("/emp_schedule", methods=['POST'])
 def add_emp_schedule():
     return emp_logic.add_emp_schedule()
+
+@app.route("/candidate_schedule", methods=['GET'])
+# schedule detail of all candidates
+def get_candidate_schedule():
+    return candidate_logic.get_candidate_schedule()
+
+
+# endpoint to add a candidate schedule
+@app.route("/candidate_schedule", methods=['POST'])
+def add_candidate_schedule():
+    return candidate_logic.add_candidate_schedule()
 
 
 if __name__ == '__main__':
