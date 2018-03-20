@@ -7,11 +7,12 @@ import time
 
 
 class CandidateLogic:
-    def __init__(self):
+    def __init__ (self):
         self.candidate_schema = CandidateScheduleSchema()
         self.candidates_schema = CandidateScheduleSchema(many=True)
 
-    def verify_post_data(self):
+    @staticmethod
+    def verify_post_data ():
         # check every field is present and end_time is greater than start_time
         try:
             request.json['name']
@@ -21,8 +22,7 @@ class CandidateLogic:
             request.json['email']
 
             # verify entry is Mon-Friday only
-            if request.json['day'] not in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-                                           'Mon', 'Tues', 'Wed', 'Thurs', 'Fri'):
+            if request.json['day'] not in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'):
                 return False, {"Error: ": "Day format is incorrect"}
 
             # verifying whether time is in 24 hours format only
@@ -30,18 +30,18 @@ class CandidateLogic:
             time.strptime(request.json['end_time'], '%H:%M')
 
             # verifying end_time is greater than start_time
-            timeA = datetime.datetime.strptime(request.json['start_time'], "%H:%M")
-            timeB = datetime.datetime.strptime(request.json['end_time'], "%H:%M")
-            if timeB <= timeA:  return False, {"Error: ": "end_time is less/equal than start_time"}
+            time_a = datetime.datetime.strptime(request.json['start_time'], "%H:%M")
+            time_b = datetime.datetime.strptime(request.json['end_time'], "%H:%M")
+            if time_b <= time_a:  return False, {"Error: ": "end_time is less/equal than start_time"}
 
         except KeyError:  # All the values are not present
             return False, {"Error": "All mandatory fields are not provided"}
         except ValueError:  # time format of start_time and end_time is not in 24 hours format
             return False, {"Error": "Time format is/are not in 24 hours format"}
 
-        return True, "all ok"
+        return True, {"Success": "all ok"}
 
-    def add_candidate_schedule(self):
+    def add_candidate_schedule (self):
 
         is_data_ok, error_msg = self.verify_post_data()
         if not is_data_ok:
@@ -61,7 +61,7 @@ class CandidateLogic:
             db.session.add(candidate)
             db.session.commit()
 
-            candidate_schedule = CandidateSchedule.query.filter_by(
+        candidate_schedule = CandidateSchedule.query.filter_by(
                 day=day,
                 start_time=start_time,
                 end_time=end_time,
@@ -75,7 +75,10 @@ class CandidateLogic:
 
         return self.candidate_schema.jsonify(candidate_schedule)
 
-    def get_candidate_schedule(self):
+    def get_all_candidate_schedule (self):
         all_candidate = CandidateSchedule.query.all()
         result = self.candidates_schema.dump(all_candidate)
         return jsonify(result.data)
+
+    def get_unique_candidate_schedules (self):
+        pass

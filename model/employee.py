@@ -1,6 +1,7 @@
 from setting import db, ma
 from sqlalchemy.orm import backref
 
+
 class Employee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=False, nullable=False)
@@ -33,4 +34,3 @@ class EmployeeScheduleSchema(ma.Schema):
     class Meta:
         # Fields to expose
         fields = ('day', 'start_time', 'end_time', 'emp_id')
-
