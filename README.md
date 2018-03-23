@@ -16,6 +16,11 @@ the mutually agreeable interview time slots.
 <code> $ export PYTHONPATH=$PWD </code> <br>
 <code> $ python run_scheduler.py </code> <br>
 
+# How to run a demo use case
+First run the application in a terminal and execute the following command in another terminal
+<code> cd scheduler </code>
+<code> sh demo_usecase_run.sh </code>
+
 # How to reset the application before its usage
 <code> curl -d '{}' -H "Content-Type: application/json" -X POST http://localhost:5000/reset_scheduler </code>
 
