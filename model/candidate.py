@@ -6,17 +6,11 @@ class Candidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=False, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    schedule = db.relationship(
-        'CandidateSchedule',
-        backref=backref("candidate")
-    )
+    schedule = db.relationship('CandidateSchedule', backref=backref("candidate"))
 
     def __init__ (self, name, email):
         self.name = name
         self.email = email
-
-    #def __repr__ (self):
-    #    return '<Candidate %r>' % self.name
 
 
 class CandidateSchedule(db.Model):

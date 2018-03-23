@@ -87,7 +87,3 @@ class CandidateLogic:
         all_candidate = CandidateSchedule.query.all()
         result = self.candidates_schema.dump(all_candidate)
         return jsonify(result.data)
-
-    def delete_candidate_db_content(self):
-        #todo:
-        pass

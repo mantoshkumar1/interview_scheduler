@@ -90,8 +90,5 @@ class EmpLogic:
         result = self.employees_schema.dump(all_emp)
         return jsonify(result.data)
 
-    def delete_employee_db_content(self):
-        #todo
-        pass
 
 

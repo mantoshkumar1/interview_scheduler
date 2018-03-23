@@ -9,9 +9,9 @@ from setting import db
 
 
 class ScheduleAlgo:
-    def __init__ (self):
+    def __init__ ( self ):
         self.interview_schema = InterviewScheduleSchema ( )
-        self.interviews_schema = InterviewScheduleSchema(many=True)
+        self.interviews_schema = InterviewScheduleSchema (many=True)
 
     @staticmethod
     def get_interviewers_email ( ):
@@ -33,7 +33,7 @@ class ScheduleAlgo:
         return unique_interviewers, ", ".join (unique_interviewers)
 
     @staticmethod
-    def find_overlapping_time (t1, t2):
+    def find_overlapping_time ( t1, t2 ):
         """
         This functions finds overlapping time between two times, if overlapping
         time is not possible, it returns None, None.
@@ -56,7 +56,7 @@ class ScheduleAlgo:
         return start_time, end_time
 
     @staticmethod
-    def convert_datetime_to_str (user_date_time):
+    def convert_datetime_to_str ( user_date_time ):
         """
         This function converts 24 hours datetime object to string
         :param user_date_time: datetime object in HH:MM format
@@ -65,7 +65,7 @@ class ScheduleAlgo:
         return user_date_time.strftime ("%H:%M")
 
     @staticmethod
-    def convert_str_to_datetime (time_str):
+    def convert_str_to_datetime ( time_str ):
         """
         This function converts 24 hours string time to datetime object
         :param time_str:time in string (HH:MM format)
@@ -73,7 +73,7 @@ class ScheduleAlgo:
         """
         return datetime.datetime.strptime (time_str, "%H:%M")
 
-    def find_common_schedule_time (self, schedule_1, schedule_2):
+    def find_common_schedule_time ( self, schedule_1, schedule_2 ):
         """
         This function finds the common schedule between two given schedules.
         If common schedule is not possible, it returns empty dictionary
@@ -96,7 +96,7 @@ class ScheduleAlgo:
 
         return common_schedule
 
-    def calculate_schedule_interview (self):
+    def calculate_schedule_interview ( self ):
         """
         This function fetches candidate and interviewers email ids and their corresponding availabilities.
         Based on their availabilities, it schedule an appointment with interviewers and candidate.
@@ -108,11 +108,10 @@ class ScheduleAlgo:
         :return: Json
         """
         valid_input_format = {
-            'candidate_email' : 'candidate1@gmail.com',
+            'candidate_email': 'candidate1@gmail.com',
             'interviewers_email': 'interviewer1@gmail.com, interviewer2@gmail.com'
         }
         warning_msg = "Please provide input in following format: " + str (valid_input_format)
-
 
         # post rpc input verification and fetching
         try:
@@ -220,9 +219,9 @@ class ScheduleAlgo:
         # return json reply
         return self.interview_schema.jsonify (interview_schedule)
 
-    def prepare_interview_schedule_instance (self, interview_day,
-                                             interview_start_time, interview_end_time,
-                                             candidate_email, interviewers_email):
+    def prepare_interview_schedule_instance ( self, interview_day,
+                                              interview_start_time, interview_end_time,
+                                              candidate_email, interviewers_email ):
         interview_schedule = InterviewSchedule (
             day=interview_day,
             start_time=self.convert_datetime_to_str (interview_start_time),
@@ -233,13 +232,14 @@ class ScheduleAlgo:
 
         return interview_schedule
 
-    def update_interviewers_timeslots (self,
-                                       interviewers_email,
-                                       interview_day, interview_start_time, interview_end_time
-                                       ):
+    def update_interviewers_timeslots ( self,
+                                        interviewers_email,
+                                        interview_day, interview_start_time, interview_end_time
+                                        ):
         """
         Once an appointment is booked for a candidate, deleted the used time slot from interviewers
         available timeslots.
+
         :param interviewers_email: set of interviewer emails in str format
         :param interview_day: string format
         :param interview_start_time: datetime format
@@ -264,15 +264,34 @@ class ScheduleAlgo:
                     db.session.commit ( )
                     break
 
-
-    def get_schedule_interviews (self):
+    def get_schedule_interviews ( self ):
         """
+        This function returns this list of candidate and their scheduled appointment with interviewers
         :return: The calculated schedules of interviews for next week
         """
         all_schedule = InterviewSchedule.query.all ( )
         result = self.interviews_schema.dump (all_schedule)
         return jsonify (result.data)
 
-    def delete_schedule_db_content(self):
-        pass
+    @staticmethod
+    def reset_scheduler_dbs_for_next_week ( ):
+        """
+        This function resets all the dbs and thus prepares the scheduler application for next week.
+        :return: Json
+        """
 
+        # Note:  Order of execution matters for the sake of db integrity (Just to be holistic).
+        # Don't worry, other order of below exceution will not have impact on application functionality.
+        if request.method == 'GET':
+            return "To reset dbs, send an empty post to the same URI"
+
+        db.session.query (InterviewSchedule).delete ( )
+
+        db.session.query (EmployeeSchedule).delete ( )
+        db.session.query (Employee).delete ( )
+
+        db.session.query (CandidateSchedule).delete ( )
+        db.session.query (Candidate).delete ( )
+
+        db.session.commit ( )
+        return jsonify ({"Status": "Content of previous week is deleted from DBs. Application is now ready for use."})
