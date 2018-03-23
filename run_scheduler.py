@@ -17,8 +17,8 @@ def hello_world():
     return 'Application is up!'
 
 
-@app.route("/emp_schedule", methods=['GET'])
 # schedule detail of all employees
+@app.route("/emp_schedule", methods=['GET'])
 def get_emp_schedule():
     return emp_logic.get_emp_schedule()
 
@@ -50,7 +50,7 @@ def calculate_schedule_interview():
 # endpoint to fetch an interview schedule time of a candidate with list of interviewers
 @app.route("/schedule_interview", methods=['GET'])
 def get_schedule_interview():
-    return schedule_logic.get_schedule_interview()
+    return schedule_logic.get_schedule_interviews()
 
 
 if __name__ == '__main__':

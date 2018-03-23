@@ -1,10 +1,11 @@
 from flask import request, jsonify
+import datetime
+import time
 
 from setting import db
 from model.employee import Employee, EmployeeSchedule, EmployeeScheduleSchema
 
-import datetime
-import time
+
 
 
 class EmpLogic:
@@ -14,6 +15,14 @@ class EmpLogic:
 
     @staticmethod
     def verify_post_data ():
+        valid_input_format = {'name': 'Test',
+                              'email': 'test@test.com',
+                              'day': 'Monday',
+                              'start_time': '16:30',
+                              'end_time': '17:30'
+                              }
+        warning_msg = "Please provide input in following format: " + str (valid_input_format)
+
         # check every field is present and end_time is greater than start_time
         try:
             request.json['name']
@@ -24,7 +33,7 @@ class EmpLogic:
 
             # verify entry is Mon-Friday only
             if request.json['day'] not in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'):
-                return False, {"Error: ": "Day format is incorrect"}
+                return False, {"Error: ": "Day format is incorrect", 'Fix': warning_msg}
 
             # verifying whether time is in 24 hours format only
             time.strptime(request.json['start_time'], '%H:%M')
@@ -33,12 +42,13 @@ class EmpLogic:
             # verifying end_time is greater than start_time
             time_a = datetime.datetime.strptime(request.json['start_time'], "%H:%M")
             time_b = datetime.datetime.strptime(request.json['end_time'], "%H:%M")
-            if time_b <= time_a:  return False, {"Error: ": "end_time is less/equal than start_time"}
+            if time_b <= time_a:
+                return False, {"Error: ": "end_time is less/equal than start_time", 'Fix': warning_msg}
 
         except KeyError:  # All the values are not present
-            return False, {"Error": "All mandatory fields are not provided"}
+            return False, {"Error": "All mandatory fields are not provided", 'Fix': warning_msg}
         except ValueError:  # time format of start_time and end_time is not in 24 hours format
-            return False, {"Error": "Time format is/are not in 24 hours format"}
+            return False, {"Error": "Time format is/are not in 24 hours format", 'Fix': warning_msg}
 
         return True, {"Success" : "all ok"}
 
@@ -79,5 +89,9 @@ class EmpLogic:
         all_emp = EmployeeSchedule.query.all()
         result = self.employees_schema.dump(all_emp)
         return jsonify(result.data)
+
+    def delete_employee_db_content(self):
+        #todo
+        pass
 
 
