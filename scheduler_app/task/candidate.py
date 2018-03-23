@@ -1,6 +1,6 @@
 from flask import request, jsonify
 from setting import db
-from model.candidate import Candidate, CandidateSchedule, CandidateScheduleSchema
+from scheduler_app.model.candidate import Candidate, CandidateSchedule, CandidateScheduleSchema
 
 import datetime
 import time

@@ -3,7 +3,7 @@ import datetime
 import time
 
 from setting import db
-from model.employee import Employee, EmployeeSchedule, EmployeeScheduleSchema
+from scheduler_app.model.employee import Employee, EmployeeSchedule, EmployeeScheduleSchema
 
 
 

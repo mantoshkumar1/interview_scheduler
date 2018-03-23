@@ -2,9 +2,9 @@ from flask import request, jsonify
 import datetime
 from collections import defaultdict
 
-from model.candidate import Candidate, CandidateSchedule
-from model.employee import Employee, EmployeeSchedule
-from model.schedule import InterviewSchedule, InterviewScheduleSchema
+from scheduler_app.model.candidate import Candidate, CandidateSchedule
+from scheduler_app.model.employee import Employee, EmployeeSchedule
+from scheduler_app.model.schedule import InterviewSchedule, InterviewScheduleSchema
 from setting import db
 
 

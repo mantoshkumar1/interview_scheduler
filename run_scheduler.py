@@ -1,7 +1,7 @@
 from setting import app, db
-from task.employee import EmpLogic
-from task.candidate import CandidateLogic
-from task.schedule_algo import ScheduleAlgo
+from scheduler_app.task.employee import EmpLogic
+from scheduler_app.task.candidate import CandidateLogic
+from scheduler_app.task.schedule_algo import ScheduleAlgo
 
 emp_logic = EmpLogic ( )
 candidate_logic = CandidateLogic ( )
