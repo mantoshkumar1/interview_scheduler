@@ -1,4 +1,5 @@
 from flask import request, jsonify
+from werkzeug.exceptions import BadRequest
 import datetime
 from collections import defaultdict
 
@@ -119,6 +120,8 @@ class ScheduleAlgo:
             interviewers_email, interviewers_email_str = self.get_interviewers_email ( )
         except KeyError:
             return jsonify ({"Error": "All mandatory fields are not provided", "Fix": warning_msg})
+        except BadRequest:
+            return False, {"Error": "All mandatory fields are not provided", 'Fix': warning_msg}
 
         # fetching candidate object from db
         candidate = Candidate.query.filter_by (email=candidate_email).first ( )

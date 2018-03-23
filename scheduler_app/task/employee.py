@@ -1,4 +1,6 @@
 from flask import request, jsonify
+from werkzeug.exceptions import BadRequest
+
 import datetime
 import time
 
@@ -49,6 +51,8 @@ class EmpLogic:
             return False, {"Error": "All mandatory fields are not provided", 'Fix': warning_msg}
         except ValueError:  # time format of start_time and end_time is not in 24 hours format
             return False, {"Error": "Time format is/are not in 24 hours format", 'Fix': warning_msg}
+        except BadRequest:
+            return False, {"Error": "All mandatory fields are not provided", 'Fix': warning_msg}
 
         return True, {"Success" : "all ok"}
 

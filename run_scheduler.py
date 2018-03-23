@@ -16,7 +16,6 @@ with app.app_context ( ):
 def hello_world ( ):
     return 'Application is up!'
 
-
 # schedule detail of all employees
 @app.route ("/emp_schedule", methods=['GET'])
 def get_emp_schedule ( ):

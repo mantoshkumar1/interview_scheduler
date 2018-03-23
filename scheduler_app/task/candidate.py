@@ -1,6 +1,7 @@
 from flask import request, jsonify
 from setting import db
 from scheduler_app.model.candidate import Candidate, CandidateSchedule, CandidateScheduleSchema
+from werkzeug.exceptions import BadRequest
 
 import datetime
 import time
@@ -47,10 +48,13 @@ class CandidateLogic:
             return False, {"Error": "All mandatory fields are not provided", 'Fix': warning_msg}
         except ValueError:  # time format of start_time and end_time is not in 24 hours format
             return False, {"Error": "Time format is/are not in 24 hours format", 'Fix': warning_msg}
+        except BadRequest:
+            return False, {"Error": "All mandatory fields are not provided", 'Fix': warning_msg}
 
         return True, {"Success": "all ok"}
 
     def add_candidate_schedule (self):
+
         is_data_ok, error_msg = self.verify_post_data()
         if not is_data_ok:
             return jsonify(error_msg)
