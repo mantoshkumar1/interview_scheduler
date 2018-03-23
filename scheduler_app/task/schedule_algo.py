@@ -7,6 +7,7 @@ from scheduler_app.model.candidate import Candidate, CandidateSchedule
 from scheduler_app.model.employee import Employee, EmployeeSchedule
 from scheduler_app.model.schedule import InterviewSchedule, InterviewScheduleSchema
 from setting import db
+from util import verify_rpc_value
 
 
 class ScheduleAlgo:
@@ -106,11 +107,12 @@ class ScheduleAlgo:
 
         In case of any error, it provides the reason and fix of issue to the user.
 
-        :return: Json
+        :return: Json reply
         """
+
         valid_input_format = {
-            'candidate_email': 'candidate1@gmail.com',
-            'interviewers_email': 'interviewer1@gmail.com, interviewer2@gmail.com'
+            "candidate_email": "candidate1@gmail.com",
+            "interviewers_email": "interviewer1@gmail.com, interviewer2@gmail.com"
         }
         warning_msg = "Please provide input in following format: " + str (valid_input_format)
 
@@ -118,8 +120,11 @@ class ScheduleAlgo:
         try:
             candidate_email = request.json['candidate_email']
             interviewers_email, interviewers_email_str = self.get_interviewers_email ( )
+            verify_rpc_value (request.json)
         except KeyError:
             return jsonify ({"Error": "All mandatory fields are not provided", "Fix": warning_msg})
+        except ValueError:
+            return False, {"Error": "One of the values is not string", 'Fix': warning_msg}
         except BadRequest:
             return False, {"Error": "All mandatory fields are not provided", 'Fix': warning_msg}
 
@@ -133,7 +138,6 @@ class ScheduleAlgo:
 
         # if candidate is already scheduled then no more processing and just return the result
         interview_schedule = InterviewSchedule.query.filter_by (candidate_email=candidate_email).first ( )
-        # interview_schedule = self.get_candidate_scheduled_interview(candidate_email)
         if interview_schedule:  # interview is already scheduled
             return self.interview_schema.jsonify (interview_schedule)
 
@@ -147,10 +151,6 @@ class ScheduleAlgo:
             start_time = datetime.datetime.strptime (c_schedule.start_time, "%H:%M")
             end_time = datetime.datetime.strptime (c_schedule.end_time, "%H:%M")
             common_schedule[day].append ((start_time, end_time))
-
-        # store common interviewer schedule so that if an appointment is made
-        # then we can delete that time entry from interviewer schedule
-        # interviewer_used_timeslot = {}
 
         # fetching schedule of each interviewer
         for i_email in interviewers_email:
@@ -185,16 +185,10 @@ class ScheduleAlgo:
                 error_msg = "For next week, interview scheduling is not possible for " + candidate_email
                 return jsonify ({"Error": error_msg, "Fix": "Enter new availabilities for candidate"})
 
-            # interviewer_used_timeslot[interviewer_schedules] =
 
         # Now common_schedule has the common possible schedule
         # We choose a random entry from common_schedule dictionary
         common_schedule = common_schedule.items ( )
-
-        # if not common_schedule:
-        #    write code for this part later, return empty and do not save result in db
-        #    pass
-
         # [
         #   ( day, [ (start1, end1), (start2, end2) ] )
         # ]
@@ -225,6 +219,16 @@ class ScheduleAlgo:
     def prepare_interview_schedule_instance ( self, interview_day,
                                               interview_start_time, interview_end_time,
                                               candidate_email, interviewers_email ):
+        """
+        This function creates an instance of InterviewSchedule db and returns such.
+
+        :param interview_day: day of the week in str format
+        :param interview_start_time: 24 hours time in datetime format
+        :param interview_end_time: 24 hours time in datetime format
+        :param candidate_email: email of candidate in str format
+        :param interviewers_email: emails of interviewers in str format
+        :return: an instance of InterviewSchedule db
+        """
         interview_schedule = InterviewSchedule (
             day=interview_day,
             start_time=self.convert_datetime_to_str (interview_start_time),
@@ -244,9 +248,9 @@ class ScheduleAlgo:
         available timeslots.
 
         :param interviewers_email: set of interviewer emails in str format
-        :param interview_day: string format
-        :param interview_start_time: datetime format
-        :param interview_end_time: datetime format
+        :param interview_day: string format of the day in a week
+        :param interview_start_time: datetime format in 24 hours
+        :param interview_end_time: datetime format in 24 hours
         :return:
         """
         for i_email in interviewers_email:
@@ -280,7 +284,7 @@ class ScheduleAlgo:
     def reset_scheduler_dbs_for_next_week ( ):
         """
         This function resets all the dbs and thus prepares the scheduler application for next week.
-        :return: Json
+        :return: Json reply
         """
 
         # Note:  Order of execution matters for the sake of db integrity (Just to be holistic).

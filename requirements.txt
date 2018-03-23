@@ -1,16 +1,10 @@
+Flask==0.10.1
+Flask-RESTful==0.3.3
 
-https://github.com/narenaryan/Salary-API
+Flask-SQLAlchemy >=2.3.2
+flask-marshmallow>=0.8.0
+marshmallow-sqlalchemy>=0.13.0
+Werkzeug>=0.10.4
 
-- Install flask: 
-$ pip install Flask
-
-- Installing flask-sqlalchemy and flask-marshmallow
-$ pip install flask_sqlalchemy
-$ pip install flask_marshmallow
-$ pip install marshmallow-sqlalchemy
-
-
-sqlalchemy ??
-
-# for testing
-nose2  (version: 0.6.4-1)
+#testing
+pytest==2.8.0
