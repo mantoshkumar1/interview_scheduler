@@ -1,21 +1,53 @@
-import datetime
-
-from collections import defaultdict
 from flask import request, jsonify
 from flask_api import status
 from werkzeug.exceptions import BadRequest
 
-from scheduler_app.model.candidate import Candidate, CandidateSchedule
-from scheduler_app.model.employee import Employee, EmployeeSchedule
-from scheduler_app.model.schedule import InterviewSchedule, InterviewScheduleSchema
-from setting import db
-from util import verify_rpc_value, commit_into_db
+import datetime
+from collections import defaultdict
+
+from ..model.schedule import InterviewSchedule, InterviewScheduleSchema
+
+from .person import Person
+from .candidate import CandidateLogic
+from .employee import EmpLogic
 
 
-class ScheduleAlgo:
+class ScheduleAlgo ( Person ):
     def __init__ ( self ):
+        self.emp_logic = EmpLogic ( )
+        self.candidate_logic = CandidateLogic ( )
         self.interview_schema = InterviewScheduleSchema ( )
         self.interviews_schema = InterviewScheduleSchema ( many=True )
+
+    @classmethod
+    def verify_post_data ( cls ):
+        """
+        Overriding method defined in Person class.
+        Verify POST RPC data. If data is not supposed format, it raises appropriate error.
+        :return: status_code and collected data (error_msg or post_data)
+        """
+        valid_input_format = {
+            "candidate_email": "candidate1@gmail.com",
+            "interviewers_email": "interviewer1@gmail.com, interviewer2@gmail.com"
+        }
+        warning_msg = "Please provide input in following json format: " + str ( valid_input_format )
+
+        # post rpc input verification and fetching
+        try:
+            candidate_email = request.json[ 'candidate_email' ]
+            interviewers_email, interviewers_email_str = cls.get_interviewers_email ( )
+            cls.verify_rpc_value ( request.json )
+        except KeyError:
+            return status.HTTP_400_BAD_REQUEST, {"Error": "All mandatory fields are not provided", 'Fix': warning_msg}
+        except ValueError:
+            return status.HTTP_400_BAD_REQUEST, {"Error": "One of the values is not string", 'Fix': warning_msg}
+        except BadRequest:
+            return status.HTTP_400_BAD_REQUEST, {"Error": "All mandatory fields are not provided in json format",
+                                                 'Fix': warning_msg}
+
+        return status.HTTP_200_OK, {"candidate_email": candidate_email, \
+                                    "interviewers_email": interviewers_email, \
+                                    "interviewers_email_str": interviewers_email_str}
 
     @staticmethod
     def get_interviewers_email ( ):
@@ -39,11 +71,9 @@ class ScheduleAlgo:
     @staticmethod
     def find_overlapping_time ( t1, t2 ):
         """
-        This functions finds overlapping time between two times, if overlapping
-        time is not possible, it returns None, None.
+        This functions finds overlapping time between two times, if overlapping time is not possible, it returns None, None.
 
-        Note: Both t1 and t2 conatain a tuple of 2 elements,
-              where each entry in those tuples are in datetime format.
+        Note: Both t1 and t2 contains a tuple of 2 elements, where each entry in those tuples are in datetime format.
 
         :param t1: (start_time, end_time)
         :param t2: (start_time, end_time)
@@ -111,30 +141,16 @@ class ScheduleAlgo:
 
         :return: Json reply and http status code
         """
+        status_code, data = self.verify_post_data ( )
+        if status_code != status.HTTP_200_OK:
+            return jsonify ( data ), status_code
 
-        valid_input_format = {
-            "candidate_email": "candidate1@gmail.com",
-            "interviewers_email": "interviewer1@gmail.com, interviewer2@gmail.com"
-        }
-        warning_msg = "Please provide input in following json format: " + str ( valid_input_format )
+        candidate_email = data[ "candidate_email" ]
+        interviewers_email = data[ "interviewers_email" ]
+        interviewers_email_str = data[ "interviewers_email_str" ]
 
-        # post rpc input verification and fetching
-        try:
-            candidate_email = request.json[ 'candidate_email' ]
-            interviewers_email, interviewers_email_str = self.get_interviewers_email ( )
-            verify_rpc_value ( request.json )
-        except KeyError:
-            return jsonify (
-                {"Error": "All mandatory fields are not provided", "Fix": warning_msg} ), status.HTTP_400_BAD_REQUEST
-        except ValueError:
-            return jsonify (
-                {"Error": "One of the values is not string", 'Fix': warning_msg} ), status.HTTP_400_BAD_REQUEST
-        except BadRequest:
-            return jsonify (
-                {"Error": "All mandatory fields are not provided", 'Fix': warning_msg} ), status.HTTP_400_BAD_REQUEST
-
-        # fetching candidate object from db
-        candidate = Candidate.query.filter_by ( email=candidate_email ).first ( )
+        # fetching first candidate object from db matching candidate_email
+        candidate = self.candidate_logic.fetch_candidate_obj_from_db ( candidate_email )
 
         # checking if candidate exist, if not then just exit
         if not candidate:
@@ -148,28 +164,26 @@ class ScheduleAlgo:
             return self.interview_schema.jsonify ( interview_schedule ), status.HTTP_200_OK
 
         # fetch time slot choices saved in CandidateSchedule table
-        candidate_schedules = CandidateSchedule.query.filter_by ( candidate_id=candidate.id ).all ( )
+        candidate_schedules = self.candidate_logic.fetch_candidate_schedule_objs_from_db ( candidate.id )
 
         common_schedule = defaultdict ( lambda: [ ] )  # {day: [(start_time, end_time)]}
 
         for c_schedule in candidate_schedules:
             day = c_schedule.day
-            start_time = datetime.datetime.strptime ( c_schedule.start_time, "%H:%M" )
-            end_time = datetime.datetime.strptime ( c_schedule.end_time, "%H:%M" )
+            start_time = self.convert_str_to_datetime ( c_schedule.start_time )
+            end_time = self.convert_str_to_datetime ( c_schedule.end_time )
             common_schedule[ day ].append ( (start_time, end_time) )
 
         # fetching schedule of each interviewer
         for i_email in interviewers_email:
-            interviewer = Employee.query.filter_by ( email=i_email ).first ( )
+            interviewer = self.emp_logic.fetch_emp_obj_from_db ( i_email )
 
             # checking if interviewer exist, if not then just exit
             if not interviewer:
                 error_msg = "Interviewer " + i_email + " does not exist in company"
                 return jsonify ( {"Error": error_msg, "Fix": "Hire that Guy first:)"} ), status.HTTP_403_FORBIDDEN
 
-            interviewer_schedules = EmployeeSchedule.query.filter_by (
-                emp_id=interviewer.id
-            ).all ( )
+            interviewer_schedules = self.emp_logic.fetch_emp_schedule_objs_from_db ( interviewer.id )
 
             fetched_interviewer_schedules = defaultdict ( lambda: [ ] )  # {day: [(start_time, end_time)]}
             for i_schedule in interviewer_schedules:
@@ -216,8 +230,7 @@ class ScheduleAlgo:
         )
 
         # save the result in schedule db
-        db.session.add ( interview_schedule )
-        commit_into_db ( )
+        self.commit_into_db ( interview_schedule )
 
         # return json reply
         return self.interview_schema.jsonify ( interview_schedule ), status.HTTP_200_OK
@@ -260,10 +273,8 @@ class ScheduleAlgo:
         :return:
         """
         for i_email in interviewers_email:
-            interviewer = Employee.query.filter_by ( email=i_email ).first ( )
-            interviewer_schedules = EmployeeSchedule.query.filter_by (
-                emp_id=interviewer.id
-            ).all ( )
+            interviewer = self.emp_logic.fetch_emp_obj_from_db ( i_email )
+            interviewer_schedules = self.emp_logic.fetch_emp_schedule_objs_from_db ( interviewer.id )
 
             for i_schedule in interviewer_schedules:
                 day = i_schedule.day
@@ -273,8 +284,7 @@ class ScheduleAlgo:
                 end_time = self.convert_str_to_datetime ( i_schedule.end_time )
 
                 if start_time <= interview_start_time and interview_end_time <= end_time:
-                    db.session.delete ( i_schedule )
-                    commit_into_db ( )
+                    self.commit_into_db ( i_schedule, add_operation=False )
                     break
 
     def get_schedule_interviews ( self ):
@@ -284,11 +294,9 @@ class ScheduleAlgo:
         """
         all_schedule = InterviewSchedule.query.all ( )
         result = self.interviews_schema.dump ( all_schedule )
-        import pdb;pdb.set_trace()
         return jsonify ( {"scheduled_interviews": result.data} ), status.HTTP_200_OK
 
-    @staticmethod
-    def reset_scheduler_dbs_for_next_week ( ):
+    def reset_scheduler_dbs_for_next_week ( self ):
         """
         This function resets all the dbs and thus prepares the scheduler application for next week.
         :return: Json reply and http status code
@@ -299,15 +307,13 @@ class ScheduleAlgo:
         if request.method == 'GET':
             return "To reset dbs, send an empty post to the same URI"
 
+        from setting import db
         db.session.query ( InterviewSchedule ).delete ( )
 
-        db.session.query ( EmployeeSchedule ).delete ( )
-        db.session.query ( Employee ).delete ( )
+        self.emp_logic.reset_employees_data ( )
+        self.candidate_logic.reset_candidates_data ( )
 
-        db.session.query ( CandidateSchedule ).delete ( )
-        db.session.query ( Candidate ).delete ( )
-
-        commit_into_db ( )
+        self.commit_into_db ( content=None, add_operation=False )
 
         return jsonify ( {
             "Status": "Content of previous week is deleted from DBs. Application is now ready for use."} ), status.HTTP_200_OK
