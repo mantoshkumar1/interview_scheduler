@@ -284,7 +284,8 @@ class ScheduleAlgo:
         """
         all_schedule = InterviewSchedule.query.all ( )
         result = self.interviews_schema.dump ( all_schedule )
-        return jsonify ( result.data ), status.HTTP_200_OK
+        import pdb;pdb.set_trace()
+        return jsonify ( {"scheduled_interviews": result.data} ), status.HTTP_200_OK
 
     @staticmethod
     def reset_scheduler_dbs_for_next_week ( ):
@@ -309,4 +310,4 @@ class ScheduleAlgo:
         commit_into_db ( )
 
         return jsonify ( {
-                             "Status": "Content of previous week is deleted from DBs. Application is now ready for use."} ), status.HTTP_200_OK
+            "Status": "Content of previous week is deleted from DBs. Application is now ready for use."} ), status.HTTP_200_OK
