@@ -1,6 +1,7 @@
 Flask==0.10.1
 Flask-RESTful==0.3.3
-
+Flask-API>=1.0
+SQLAlchemy>=1.0.11
 Flask-SQLAlchemy >=2.3.2
 flask-marshmallow>=0.8.0
 marshmallow-sqlalchemy>=0.13.0
